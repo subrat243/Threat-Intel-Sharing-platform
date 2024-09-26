@@ -191,6 +191,11 @@ const contractABI = [
 	}
 ]; // TODO: Replace with your contract's ABI
 
+// Pagination variables
+const threatsPerPage = 5;
+let currentPage = 1;
+let allThreats = [];
+
 // Connect to MetaMask and initialize Web3
 async function initWeb3() {
     if (window.ethereum) {
@@ -201,9 +206,10 @@ async function initWeb3() {
             // Initialize contract instance
             contract = new web3.eth.Contract(contractABI, contractAddress);
             console.log("Connected to MetaMask");
+            loadThreats(); // Load threats on initialization
         } catch (error) {
             console.error("User denied account access", error);
-            alert("Please allow access to MetaMask to use this platform.");
+            showModal("Access Denied", "Please allow access to MetaMask to use this platform.", "error");
         }
     } else {
         alert("MetaMask not detected. Please install MetaMask.");
@@ -218,20 +224,25 @@ document.getElementById("submitThreatForm").addEventListener("submit", async fun
     const description = document.getElementById("description").value.trim();
 
     if (!ipAddress || !hash || !description) {
-        displayStatus("submitStatus", "All fields are required.", "error");
+        showModal("Input Error", "All fields are required.", "error");
         return;
     }
 
     try {
         const accounts = await web3.eth.getAccounts();
-        displayStatus("submitStatus", "Submitting threat...", "info");
+        // Show loading spinner
+        document.getElementById("submitLoading").style.display = "inline-block";
+        // Submit threat
         await contract.methods.submitThreat(ipAddress, hash, description).send({ from: accounts[0] });
-        displayStatus("submitStatus", "Threat submitted successfully!", "success");
+        // Hide loading spinner
+        document.getElementById("submitLoading").style.display = "none";
+        showModal("Success", "Threat submitted successfully!", "success");
         document.getElementById("submitThreatForm").reset();
         loadThreats(); // Refresh threats list
     } catch (error) {
         console.error(error);
-        displayStatus("submitStatus", "Error submitting threat. Please try again.", "error");
+        document.getElementById("submitLoading").style.display = "none";
+        showModal("Submission Error", "Error submitting threat. Please try again.", "error");
     }
 });
 
@@ -240,76 +251,222 @@ document.getElementById("verifyThreatButton").addEventListener("click", async fu
     const threatId = document.getElementById("verifyThreatId").value.trim();
 
     if (threatId === "") {
-        displayStatus("verifyStatus", "Threat ID is required.", "error");
+        showModal("Input Error", "Threat ID is required.", "error");
         return;
     }
 
     try {
         const accounts = await web3.eth.getAccounts();
-        displayStatus("verifyStatus", "Verifying threat...", "info");
+        // Show loading spinner
+        document.getElementById("verifyLoading").style.display = "inline-block";
+        // Verify threat
         await contract.methods.verifyThreat(threatId).send({ from: accounts[0] });
-        displayStatus("verifyStatus", `Threat ID ${threatId} verified successfully!`, "success");
+        // Hide loading spinner
+        document.getElementById("verifyLoading").style.display = "none";
+        showModal("Success", `Threat ID ${threatId} verified successfully!`, "success");
+        document.getElementById("verifyThreatId").value = '';
         loadThreats(); // Refresh threats list
     } catch (error) {
         console.error(error);
-        displayStatus("verifyStatus", "Error verifying threat. Please try again.", "error");
+        document.getElementById("verifyLoading").style.display = "none";
+        showModal("Verification Error", "Error verifying threat. Please try again.", "error");
     }
 });
 
-// View All Threats
-document.getElementById("viewThreatsButton").addEventListener("click", loadThreats);
+// View All Threats Button
+document.getElementById("viewThreatsButton").addEventListener("click", function () {
+    currentPage = 1; // Reset to first page
+    displayThreats();
+});
 
-// Function to load and display threats
+// Search and Filter Functionality
+document.getElementById("searchInput").addEventListener("input", function () {
+    currentPage = 1; // Reset to first page
+    displayThreats();
+});
+
+document.getElementById("filterVerified").addEventListener("change", function () {
+    currentPage = 1; // Reset to first page
+    displayThreats();
+});
+
+// Load Threats from Smart Contract
 async function loadThreats() {
     try {
         const threats = await contract.methods.getThreats().call();
-        const tableBody = document.getElementById("threatsBody");
-        tableBody.innerHTML = ""; // Clear existing rows
-
-        for (let i = 0; i < threats.length; i++) {
-            const threat = threats[i];
-            const isVerified = await contract.methods.verifiedThreats(threat.id).call();
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${threat.id}</td>
-                <td>${threat.ipAddress}</td>
-                <td>${threat.hash}</td>
-                <td>${threat.description}</td>
-                <td>${isVerified ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
-            `;
-            tableBody.appendChild(row);
-        }
+        const verifiedStatuses = await Promise.all(threats.map(threat => contract.methods.verifiedThreats(threat.id).call()));
+        // Combine threats with their verification status
+        allThreats = threats.map((threat, index) => ({
+            id: threat.id,
+            ipAddress: threat.ipAddress,
+            hash: threat.hash,
+            description: threat.description,
+            timestamp: threat.timestamp,
+            submitter: threat.submitter,
+            verified: verifiedStatuses[index]
+        }));
+        displayThreats();
     } catch (error) {
         console.error(error);
-        alert("Error retrieving threats. Please try again.");
+        showModal("Loading Error", "Error retrieving threats. Please try again.", "error");
     }
 }
 
-// Function to display status messages
-function displayStatus(elementId, message, type) {
-    const element = document.getElementById(elementId);
-    element.className = ""; // Reset classes
+// Display Threats with Pagination, Search, and Filters
+function displayThreats() {
+    const searchQuery = document.getElementById("searchInput").value.toLowerCase();
+    const filterVerified = document.getElementById("filterVerified").value;
 
-    switch(type) {
-        case "success":
-            element.classList.add("success");
-            break;
-        case "error":
-            element.classList.add("error");
-            break;
-        case "info":
-            element.classList.add("info");
-            break;
-        default:
-            break;
-    }
+    // Filter threats based on search query and verification status
+    let filteredThreats = allThreats.filter(threat => {
+        const matchesSearch = threat.ipAddress.toLowerCase().includes(searchQuery) ||
+                              threat.hash.toLowerCase().includes(searchQuery) ||
+                              threat.description.toLowerCase().includes(searchQuery);
+        let matchesFilter = true;
+        if (filterVerified === "verified") {
+            matchesFilter = threat.verified;
+        } else if (filterVerified === "unverified") {
+            matchesFilter = !threat.verified;
+        }
+        return matchesSearch && matchesFilter;
+    });
 
-    element.textContent = message;
+    // Calculate pagination
+    const totalThreats = filteredThreats.length;
+    const totalPages = Math.ceil(totalThreats / threatsPerPage);
+    const startIndex = (currentPage - 1) * threatsPerPage;
+    const endIndex = startIndex + threatsPerPage;
+    const threatsToDisplay = filteredThreats.slice(startIndex, endIndex);
+
+    // Update threats table
+    const tableBody = document.getElementById("threatsBody");
+    tableBody.innerHTML = ""; // Clear existing rows
+
+    threatsToDisplay.forEach(threat => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${threat.id}</td>
+            <td>${threat.ipAddress}</td>
+            <td>${threat.hash}</td>
+            <td>${threat.description}</td>
+            <td>${threat.verified ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Update pagination
+    updatePagination(totalPages);
 }
 
-// Initialize on page load
-window.addEventListener("load", () => {
-    initWeb3();
-    loadThreats(); // Automatically load threats on page load
+// Update Pagination Controls
+function updatePagination(totalPages) {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = ""; // Clear existing pagination
+
+    // Previous Button
+    const prevLi = document.createElement("li");
+    prevLi.classList.add("page-item", currentPage === 1 ? "disabled" : "");
+    prevLi.innerHTML = `
+        <a class="page-link" href="#" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+        </a>
+    `;
+    prevLi.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (currentPage > 1) {
+            currentPage--;
+            displayThreats();
+        }
+    });
+    pagination.appendChild(prevLi);
+
+    // Page Numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const pageLi = document.createElement("li");
+        pageLi.classList.add("page-item", currentPage === i ? "active" : "");
+        pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        pageLi.addEventListener("click", function (e) {
+            e.preventDefault();
+            currentPage = i;
+            displayThreats();
+        });
+        pagination.appendChild(pageLi);
+    }
+
+    // Next Button
+    const nextLi = document.createElement("li");
+    nextLi.classList.add("page-item", currentPage === totalPages || totalPages === 0 ? "disabled" : "");
+    nextLi.innerHTML = `
+        <a class="page-link" href="#" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+        </a>
+    `;
+    nextLi.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayThreats();
+        }
+    });
+    pagination.appendChild(nextLi);
+}
+
+// Function to show Bootstrap Modal for Status Messages
+function showModal(title, message, type) {
+    const modalHeader = document.getElementById("statusModalHeader");
+    const modalTitle = document.getElementById("statusModalLabel");
+    const modalBody = document.getElementById("statusModalBody");
+
+    // Set title and message
+    modalTitle.textContent = title;
+    modalBody.textContent = message;
+
+    // Set header color based on type
+    modalHeader.className = "modal-header"; // Reset classes
+    if (type === "success") {
+        modalHeader.classList.add("bg-success", "text-white");
+    } else if (type === "error") {
+        modalHeader.classList.add("bg-danger", "text-white");
+    } else if (type === "info") {
+        modalHeader.classList.add("bg-info", "text-dark");
+    }
+
+    // Show modal
+    const statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+    statusModal.show();
+}
+
+// Dark Mode Toggle
+document.getElementById("darkModeToggle").addEventListener("click", function () {
+    document.body.classList.toggle("dark-mode");
+    const isDarkMode = document.body.classList.contains("dark-mode");
+    this.textContent = isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode";
 });
+
+// CSS for Dark Mode
+const darkModeStyles = `
+    body.dark-mode {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+    .card.dark-mode {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+    }
+    .navbar.dark-mode {
+        background-color: #1e1e1e !important;
+    }
+    .table-dark .table-dark {
+        background-color: #333;
+    }
+    footer.dark-mode {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+    }
+`;
+
+// Inject Dark Mode Styles
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = darkModeStyles;
+document.head.appendChild(styleSheet);
