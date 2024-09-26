@@ -1,37 +1,113 @@
 /* style.css */
 
 /* Global Styles */
-body {
+body.light-mode {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+/* Card Backgrounds */
+.card.bg-light {
+    background-color: #ffffff;
+    color: #212529;
+}
+
+/* Navbar Styles */
+.navbar {
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Button Colors */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+/* Table Styles */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f2f2f2;
+}
+
+.table-light {
     background-color: #f8f9fa;
 }
 
-h1 {
-    color: #343a40;
+.table th, .table td {
+    vertical-align: middle;
 }
 
-.card-header h2 {
-    font-size: 1.5rem;
+/* Modal Styles */
+.modal-content {
+    background-color: #ffffff;
+    color: #212529;
 }
 
-/* Submit Status and Verify Status Messages */
-#submitStatus, #verifyStatus {
-    padding: 10px;
-    border-radius: 5px;
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
 }
 
-#submitStatus.success, #verifyStatus.success {
-    background-color: #d4edda;
-    color: #155724;
+/* Dark Mode */
+body.dark-mode {
+    background-color: #343a40;
+    color: #f8f9fa;
 }
 
-#submitStatus.error, #verifyStatus.error {
-    background-color: #f8d7da;
-    color: #721c24;
+body.dark-mode .navbar {
+    background-color: #495057;
+    border-color: #6c757d;
 }
 
-/* Footer Styling */
-footer {
-    position: fixed;
-    width: 100%;
-    bottom: 0;
+body.dark-mode .card {
+    background-color: #6c757d;
+    color: #ffffff;
+}
+
+body.dark-mode .btn-primary {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+body.dark-mode .btn-success {
+    background-color: #218838;
+    border-color: #218838;
+}
+
+body.dark-mode .btn-warning {
+    background-color: #e0a800;
+    border-color: #e0a800;
+}
+
+body.dark-mode .btn-info {
+    background-color: #117a8b;
+    border-color: #117a8b;
+}
+
+body.dark-mode .table-light {
+    background-color: #495057;
 }
