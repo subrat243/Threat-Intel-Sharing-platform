@@ -5,7 +5,7 @@ let web3;
 let contract;
 
 // Replace with your deployed contract's address and ABI
-const contractAddress = '0x0A2228e6537b0109B443A60166bFA9e57e264C56'; // TODO: Replace with your contract's address
+const contractAddress = '0x717A1D0EEe419D58033807025C8921c89EC91060'; // TODO: Replace with your contract's address
 const contractABI = [
 	{
 		"inputs": [
