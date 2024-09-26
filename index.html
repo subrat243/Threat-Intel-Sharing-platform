@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Intelligence Sharing Platform</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">ThreatIntel</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#submitSection">Submit Threat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#verifySection">Verify Threat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#viewSection">View Threats</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Blockchain-based Threat Intelligence Platform</h1>
+
+        <!-- Submit Threat Intelligence -->
+        <section id="submitSection" class="mb-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h2 class="mb-0">Submit Threat Intelligence</h2>
+                </div>
+                <div class="card-body">
+                    <form id="submitThreatForm">
+                        <div class="mb-3">
+                            <label for="ipAddress" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ipAddress" placeholder="e.g., 192.168.1.1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="hash" class="form-label">Hash (Malware Signature)</label>
+                            <input type="text" class="form-control" id="hash" placeholder="e.g., SHA256 hash" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Threat Description</label>
+                            <textarea class="form-control" id="description" rows="3" placeholder="Describe the threat..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Submit Threat</button>
+                    </form>
+                    <div id="submitStatus" class="mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Verify Threat -->
+        <section id="verifySection" class="mb-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="mb-0">Verify Threat</h2>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="verifyThreatIdLabel">Threat ID</span>
+                        <input type="number" class="form-control" id="verifyThreatId" placeholder="e.g., 0" aria-label="Threat ID" aria-describedby="verifyThreatIdLabel" required>
+                    </div>
+                    <button id="verifyThreatButton" class="btn btn-success w-100">Verify Threat</button>
+                    <div id="verifyStatus" class="mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View All Threats -->
+        <section id="viewSection" class="mb-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">All Submitted Threats</h2>
+                    <button id="viewThreatsButton" class="btn btn-light">Refresh</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="threatsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>IP Address</th>
+                                    <th>Hash</th>
+                                    <th>Description</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="threatsBody">
+                                <!-- Threats will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+        <p>&copy; 2024 ThreatIntel. All rights reserved.</p>
+    </footer>
+
+    <!-- Bootstrap JS and dependencies (Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Web3.js and frontend logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.0/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

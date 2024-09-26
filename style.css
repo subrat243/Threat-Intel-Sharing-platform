@@ -1,0 +1,37 @@
+/* style.css */
+
+/* Global Styles */
+body {
+    background-color: #f8f9fa;
+}
+
+h1 {
+    color: #343a40;
+}
+
+.card-header h2 {
+    font-size: 1.5rem;
+}
+
+/* Submit Status and Verify Status Messages */
+#submitStatus, #verifyStatus {
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#submitStatus.success, #verifyStatus.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+#submitStatus.error, #verifyStatus.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Footer Styling */
+footer {
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
