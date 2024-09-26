@@ -9,8 +9,9 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<body class="light-mode">
+    <!-- Navbar with Connect Wallet and Dark Mode Toggle -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">ThreatIntel</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
@@ -18,7 +19,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav align-items-center">
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="#submitSection">Submit Threat</a>
                     </li>
@@ -27,6 +28,12 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#viewSection">View Threats</a>
+                    </li>
+                    <li class="nav-item ms-3">
+                        <button id="connectWalletButton" class="btn btn-primary">Connect Wallet</button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="darkModeToggle" class="btn btn-secondary ms-3">🌙 Dark Mode</button>
                     </li>
                 </ul>
             </div>
@@ -38,59 +45,73 @@
 
         <!-- Submit Threat Intelligence -->
         <section id="submitSection" class="mb-5">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
+            <div class="card shadow-sm bg-light text-dark">
+                <div class="card-header bg-primary text-white">
                     <h2 class="mb-0">Submit Threat Intelligence</h2>
                 </div>
                 <div class="card-body">
                     <form id="submitThreatForm">
                         <div class="mb-3">
                             <label for="ipAddress" class="form-label">IP Address</label>
-                            <input type="text" class="form-control" id="ipAddress" placeholder="e.g., 192.168.1.1" required>
+                            <input type="text" class="form-control bg-light text-dark border-secondary" id="ipAddress" placeholder="e.g., 192.168.1.1" required>
                         </div>
                         <div class="mb-3">
                             <label for="hash" class="form-label">Hash (Malware Signature)</label>
-                            <input type="text" class="form-control" id="hash" placeholder="e.g., SHA256 hash" required>
+                            <input type="text" class="form-control bg-light text-dark border-secondary" id="hash" placeholder="e.g., SHA256 hash" required>
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">Threat Description</label>
-                            <textarea class="form-control" id="description" rows="3" placeholder="Describe the threat..." required></textarea>
+                            <textarea class="form-control bg-light text-dark border-secondary" id="description" rows="3" placeholder="Describe the threat..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Submit Threat</button>
                     </form>
-                    <div id="submitStatus" class="mt-3"></div>
+                    <!-- Loading Spinner for Submit -->
+                    <div id="submitLoading" class="spinner-border text-primary mt-3" role="status" style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Verify Threat -->
         <section id="verifySection" class="mb-5">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm bg-light text-dark">
                 <div class="card-header bg-warning text-dark">
                     <h2 class="mb-0">Verify Threat</h2>
                 </div>
                 <div class="card-body">
                     <div class="input-group mb-3">
-                        <span class="input-group-text" id="verifyThreatIdLabel">Threat ID</span>
-                        <input type="number" class="form-control" id="verifyThreatId" placeholder="e.g., 0" aria-label="Threat ID" aria-describedby="verifyThreatIdLabel" required>
+                        <span class="input-group-text bg-light text-dark" id="verifyThreatIdLabel">Threat ID</span>
+                        <input type="number" class="form-control bg-light text-dark border-secondary" id="verifyThreatId" placeholder="e.g., 0" aria-label="Threat ID" aria-describedby="verifyThreatIdLabel" required>
                     </div>
                     <button id="verifyThreatButton" class="btn btn-success w-100">Verify Threat</button>
-                    <div id="verifyStatus" class="mt-3"></div>
+                    <!-- Loading Spinner for Verify -->
+                    <div id="verifyLoading" class="spinner-border text-primary mt-3" role="status" style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- View All Threats -->
+        <!-- View All Threats with Search and Filters -->
         <section id="viewSection" class="mb-5">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm bg-light text-dark">
                 <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                     <h2 class="mb-0">All Submitted Threats</h2>
-                    <button id="viewThreatsButton" class="btn btn-light">Refresh</button>
+                    <div class="d-flex align-items-center">
+                        <input type="text" id="searchInput" class="form-control me-2 bg-light text-dark border-secondary" placeholder="Search by IP, Hash, or Description">
+                        <select id="filterVerified" class="form-select bg-light text-dark border-secondary">
+                            <option value="all">All</option>
+                            <option value="verified">Verified</option>
+                            <option value="unverified">Unverified</option>
+                        </select>
+                        <button id="viewThreatsButton" class="btn btn-light ms-2">Refresh</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped" id="threatsTable">
-                            <thead class="table-dark">
+                        <table class="table table-striped table-light" id="threatsTable">
+                            <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>IP Address</th>
@@ -104,13 +125,37 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls -->
+                    <nav>
+                        <ul class="pagination justify-content-center" id="pagination">
+                            <!-- Pagination items will be generated dynamically -->
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </section>
     </div>
 
+    <!-- Modal for Status Messages -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-light text-dark">
+                <div class="modal-header" id="statusModalHeader">
+                    <h5 class="modal-title" id="statusModalLabel">Status</h5>
+                    <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="statusModalBody">
+                    <!-- Status message will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <footer class="bg-light text-center py-3">
+    <footer class="bg-light text-center py-3 text-dark">
         <p>&copy; 2024 ThreatIntel. All rights reserved.</p>
     </footer>
 
