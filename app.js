@@ -1,472 +1,419 @@
 // app.js
 
-// Initialize Web3.js and set up contract interaction
-let web3;
-let contract;
+document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+    const navbar = document.querySelector('.navbar');
+    const footer = document.querySelector('footer');
+    const connectWalletButton = document.getElementById('connectWalletButton');
 
-// Replace with your deployed contract's address and ABI
-const contractAddress = '0x717A1D0EEe419D58033807025C8921c89EC91060'; // TODO: Replace with your contract's address
-const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_ipAddress",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_hash",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_description",
-				"type": "string"
-			}
-		],
-		"name": "submitThreat",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "submitter",
-				"type": "address"
-			}
-		],
-		"name": "ThreatSubmitted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "verifier",
-				"type": "address"
-			}
-		],
-		"name": "ThreatVerified",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_threatId",
-				"type": "uint256"
-			}
-		],
-		"name": "verifyThreat",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getThreats",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "id",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "ipAddress",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "hash",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "description",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "submitter",
-						"type": "address"
-					}
-				],
-				"internalType": "struct ThreatIntelligencePlatform.Threat[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "threats",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "ipAddress",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "hash",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "description",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "submitter",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "verifiedThreats",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]; // TODO: Replace with your contract's ABI
+    // State Variables
+    let web3;
+    let contract;
+    let userAccount = null; // To store the connected account
+    const contractAddress = 'YOUR_SMART_CONTRACT_ADDRESS'; // Replace with your contract address
+    const contractABI = [ /* YOUR_CONTRACT_ABI */ ]; // Replace with your contract's ABI
 
-// Pagination variables
-const threatsPerPage = 5;
-let currentPage = 1;
-let allThreats = [];
-
-// Connect to MetaMask and initialize Web3
-async function initWeb3() {
-    if (window.ethereum) {
-        web3 = new Web3(window.ethereum);
-        try {
-            // Request account access
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            // Initialize contract instance
-            contract = new web3.eth.Contract(contractABI, contractAddress);
-            console.log("Connected to MetaMask");
-            loadThreats(); // Load threats on initialization
-        } catch (error) {
-            console.error("User denied account access", error);
-            showModal("Access Denied", "Please allow access to MetaMask to use this platform.", "error");
-        }
+    // Initialize Dark Mode based on saved preference
+    if (localStorage.getItem('theme') === 'dark') {
+        body.classList.add('dark-mode');
+        darkModeToggle.textContent = '☀️ Light Mode';
     } else {
-        alert("MetaMask not detected. Please install MetaMask.");
-    }
-}
-
-// Submit Threat Intelligence
-document.getElementById("submitThreatForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const ipAddress = document.getElementById("ipAddress").value.trim();
-    const hash = document.getElementById("hash").value.trim();
-    const description = document.getElementById("description").value.trim();
-
-    if (!ipAddress || !hash || !description) {
-        showModal("Input Error", "All fields are required.", "error");
-        return;
+        darkModeToggle.textContent = '🌙 Dark Mode';
     }
 
-    try {
-        const accounts = await web3.eth.getAccounts();
-        // Show loading spinner
-        document.getElementById("submitLoading").style.display = "inline-block";
-        // Submit threat
-        await contract.methods.submitThreat(ipAddress, hash, description).send({ from: accounts[0] });
-        // Hide loading spinner
-        document.getElementById("submitLoading").style.display = "none";
-        showModal("Success", "Threat submitted successfully!", "success");
-        document.getElementById("submitThreatForm").reset();
-        loadThreats(); // Refresh threats list
-    } catch (error) {
-        console.error(error);
-        document.getElementById("submitLoading").style.display = "none";
-        showModal("Submission Error", "Error submitting threat. Please try again.", "error");
-    }
-});
+    // Dark Mode Toggle Event
+    darkModeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        navbar.classList.toggle('bg-primary');
+        navbar.classList.toggle('bg-dark');
+        footer.classList.toggle('bg-light');
+        footer.classList.toggle('bg-dark');
+        footer.classList.toggle('text-dark');
+        footer.classList.toggle('text-white');
 
-// Verify Threat
-document.getElementById("verifyThreatButton").addEventListener("click", async function () {
-    const threatId = document.getElementById("verifyThreatId").value.trim();
-
-    if (threatId === "") {
-        showModal("Input Error", "Threat ID is required.", "error");
-        return;
-    }
-
-    try {
-        const accounts = await web3.eth.getAccounts();
-        // Show loading spinner
-        document.getElementById("verifyLoading").style.display = "inline-block";
-        // Verify threat
-        await contract.methods.verifyThreat(threatId).send({ from: accounts[0] });
-        // Hide loading spinner
-        document.getElementById("verifyLoading").style.display = "none";
-        showModal("Success", `Threat ID ${threatId} verified successfully!`, "success");
-        document.getElementById("verifyThreatId").value = '';
-        loadThreats(); // Refresh threats list
-    } catch (error) {
-        console.error(error);
-        document.getElementById("verifyLoading").style.display = "none";
-        showModal("Verification Error", "Error verifying threat. Please try again.", "error");
-    }
-});
-
-// View All Threats Button
-document.getElementById("viewThreatsButton").addEventListener("click", function () {
-    currentPage = 1; // Reset to first page
-    displayThreats();
-});
-
-// Search and Filter Functionality
-document.getElementById("searchInput").addEventListener("input", function () {
-    currentPage = 1; // Reset to first page
-    displayThreats();
-});
-
-document.getElementById("filterVerified").addEventListener("change", function () {
-    currentPage = 1; // Reset to first page
-    displayThreats();
-});
-
-// Load Threats from Smart Contract
-async function loadThreats() {
-    try {
-        const threats = await contract.methods.getThreats().call();
-        const verifiedStatuses = await Promise.all(threats.map(threat => contract.methods.verifiedThreats(threat.id).call()));
-        // Combine threats with their verification status
-        allThreats = threats.map((threat, index) => ({
-            id: threat.id,
-            ipAddress: threat.ipAddress,
-            hash: threat.hash,
-            description: threat.description,
-            timestamp: threat.timestamp,
-            submitter: threat.submitter,
-            verified: verifiedStatuses[index]
-        }));
-        displayThreats();
-    } catch (error) {
-        console.error(error);
-        showModal("Loading Error", "Error retrieving threats. Please try again.", "error");
-    }
-}
-
-// Display Threats with Pagination, Search, and Filters
-function displayThreats() {
-    const searchQuery = document.getElementById("searchInput").value.toLowerCase();
-    const filterVerified = document.getElementById("filterVerified").value;
-
-    // Filter threats based on search query and verification status
-    let filteredThreats = allThreats.filter(threat => {
-        const matchesSearch = threat.ipAddress.toLowerCase().includes(searchQuery) ||
-                              threat.hash.toLowerCase().includes(searchQuery) ||
-                              threat.description.toLowerCase().includes(searchQuery);
-        let matchesFilter = true;
-        if (filterVerified === "verified") {
-            matchesFilter = threat.verified;
-        } else if (filterVerified === "unverified") {
-            matchesFilter = !threat.verified;
+        if (body.classList.contains('dark-mode')) {
+            darkModeToggle.textContent = '☀️ Light Mode';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            darkModeToggle.textContent = '🌙 Dark Mode';
+            localStorage.setItem('theme', 'light');
         }
-        return matchesSearch && matchesFilter;
     });
 
-    // Calculate pagination
-    const totalThreats = filteredThreats.length;
-    const totalPages = Math.ceil(totalThreats / threatsPerPage);
-    const startIndex = (currentPage - 1) * threatsPerPage;
-    const endIndex = startIndex + threatsPerPage;
-    const threatsToDisplay = filteredThreats.slice(startIndex, endIndex);
+    // Connect Wallet Button Click Event
+    connectWalletButton.addEventListener('click', connectWallet);
 
-    // Update threats table
-    const tableBody = document.getElementById("threatsBody");
-    tableBody.innerHTML = ""; // Clear existing rows
+    // Check if wallet is already connected
+    checkIfWalletIsConnected();
 
-    threatsToDisplay.forEach(threat => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${threat.id}</td>
-            <td>${threat.ipAddress}</td>
-            <td>${threat.hash}</td>
-            <td>${threat.description}</td>
-            <td>${threat.verified ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
-        `;
-        tableBody.appendChild(row);
-    });
+    // Initialize Web3 and Smart Contract
+    async function initWeb3() {
+        if (window.ethereum) {
+            web3 = new Web3(window.ethereum);
+            try {
+                // Initialize contract instance
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                console.log('Web3 and contract initialized.');
+            } catch (error) {
+                console.error('Error initializing contract:', error);
+                showStatusModal('Error', 'Failed to initialize smart contract.', 'danger');
+            }
+        } else if (window.web3) {
+            web3 = new Web3(window.web3.currentProvider);
+            contract = new web3.eth.Contract(contractABI, contractAddress);
+            console.log('Web3 injected browser.');
+        } else {
+            console.error('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            showStatusModal('Error', 'Non-Ethereum browser detected. Please install MetaMask!', 'danger');
+        }
+    }
 
-    // Update pagination
-    updatePagination(totalPages);
-}
+    // Connect Wallet Function
+    async function connectWallet() {
+        if (window.ethereum) {
+            try {
+                // Request account access if needed
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                console.log('Connected account:', userAccount);
+                connectWalletButton.textContent = `Connected: ${shortenAddress(userAccount)}`;
+                connectWalletButton.classList.remove('btn-success');
+                connectWalletButton.classList.add('btn-secondary');
 
-// Update Pagination Controls
-function updatePagination(totalPages) {
-    const pagination = document.getElementById("pagination");
-    pagination.innerHTML = ""; // Clear existing pagination
+                // Initialize Web3 and contract after connecting
+                await initWeb3();
 
-    // Previous Button
-    const prevLi = document.createElement("li");
-    prevLi.classList.add("page-item", currentPage === 1 ? "disabled" : "");
-    prevLi.innerHTML = `
-        <a class="page-link" href="#" aria-label="Previous">
-            <span aria-hidden="true">&laquo;</span>
-        </a>
-    `;
-    prevLi.addEventListener("click", function (e) {
+                // Fetch and display threats after connecting
+                fetchAndDisplayThreats();
+
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+            } catch (error) {
+                console.error('User denied account access', error);
+                showStatusModal('Error', 'User denied account access', 'danger');
+            }
+        } else {
+            showStatusModal('Error', 'Non-Ethereum browser detected. Please install MetaMask!', 'danger');
+        }
+    }
+
+    // Handle account changes
+    function handleAccountsChanged(accounts) {
+        if (accounts.length === 0) {
+            // MetaMask is locked or the user has not connected any accounts
+            console.log('Please connect to MetaMask.');
+            showStatusModal('Info', 'Please connect to MetaMask.', 'info');
+            userAccount = null;
+            connectWalletButton.textContent = 'Connect Wallet';
+            connectWalletButton.classList.remove('btn-secondary');
+            connectWalletButton.classList.add('btn-success');
+            // Optionally, clear threats list
+            clearThreatsTable();
+        } else {
+            userAccount = accounts[0];
+            connectWalletButton.textContent = `Connected: ${shortenAddress(userAccount)}`;
+            console.log('Connected account changed to:', userAccount);
+            // Refresh the threats list or perform other actions
+            fetchAndDisplayThreats();
+        }
+    }
+
+    // Utility function to shorten Ethereum address
+    function shortenAddress(address) {
+        return address.slice(0, 6) + '...' + address.slice(-4);
+    }
+
+    // Check if wallet is already connected on page load
+    async function checkIfWalletIsConnected() {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    userAccount = accounts[0];
+                    connectWalletButton.textContent = `Connected: ${shortenAddress(userAccount)}`;
+                    connectWalletButton.classList.remove('btn-success');
+                    connectWalletButton.classList.add('btn-secondary');
+                    await initWeb3();
+                    fetchAndDisplayThreats();
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', handleAccountsChanged);
+                }
+            } catch (error) {
+                console.error('Error checking wallet connection:', error);
+            }
+        }
+    }
+
+    // Submit Threat Intelligence
+    document.getElementById('submitThreatForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (currentPage > 1) {
-            currentPage--;
-            displayThreats();
+
+        if (!userAccount) {
+            showStatusModal('Authentication Required', 'Please connect your wallet to submit a threat.', 'warning');
+            return;
+        }
+
+        const ipAddress = document.getElementById('ipAddress').value.trim();
+        const hash = document.getElementById('hash').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        // Simple validation
+        if (!validateIPAddress(ipAddress)) {
+            showStatusModal('Validation Error', 'Please enter a valid IP address.', 'warning');
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('submitLoading').style.display = 'block';
+
+        try {
+            await contract.methods.submitThreat(ipAddress, hash, description).send({ from: userAccount });
+            showStatusModal('Success', 'Threat submitted successfully!', 'success');
+            document.getElementById('submitThreatForm').reset();
+            // Refresh threats list
+            fetchAndDisplayThreats();
+        } catch (error) {
+            console.error('Error submitting threat:', error);
+            showStatusModal('Error', 'Failed to submit threat. Please try again.', 'danger');
+        } finally {
+            document.getElementById('submitLoading').style.display = 'none';
         }
     });
-    pagination.appendChild(prevLi);
 
-    // Page Numbers
-    for (let i = 1; i <= totalPages; i++) {
-        const pageLi = document.createElement("li");
-        pageLi.classList.add("page-item", currentPage === i ? "active" : "");
-        pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-        pageLi.addEventListener("click", function (e) {
-            e.preventDefault();
-            currentPage = i;
-            displayThreats();
+    // Validate IP Address
+    function validateIPAddress(ip) {
+        const regex = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+        return regex.test(ip);
+    }
+
+    // Verify Threat Intelligence
+    document.getElementById('verifyThreatButton').addEventListener('click', async () => {
+        if (!userAccount) {
+            showStatusModal('Authentication Required', 'Please connect your wallet to verify a threat.', 'warning');
+            return;
+        }
+
+        const threatId = document.getElementById('verifyThreatId').value.trim();
+
+        if (threatId === '' || isNaN(threatId)) {
+            showStatusModal('Validation Error', 'Please enter a valid Threat ID.', 'warning');
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('verifyLoading').style.display = 'block';
+
+        try {
+            await contract.methods.verifyThreat(threatId).send({ from: userAccount });
+            showStatusModal('Success', `Threat ID ${threatId} verified successfully!`, 'success');
+            document.getElementById('verifyThreatId').value = '';
+            // Refresh threats list
+            fetchAndDisplayThreats();
+        } catch (error) {
+            console.error('Error verifying threat:', error);
+            showStatusModal('Error', 'Failed to verify threat. Please try again.', 'danger');
+        } finally {
+            document.getElementById('verifyLoading').style.display = 'none';
+        }
+    });
+
+    // Fetch and Display Threats with Search and Filters
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let allThreats = [];
+
+    document.getElementById('viewThreatsButton').addEventListener('click', fetchAndDisplayThreats);
+
+    async function fetchAndDisplayThreats() {
+        if (!contract) {
+            showStatusModal('Error', 'Smart contract is not initialized.', 'danger');
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('threatsBody').innerHTML = '';
+        showLoadingTable(true);
+
+        try {
+            const threatsCount = await contract.methods.getThreatsCount().call();
+            let threats = [];
+
+            // Fetch threats in batches to optimize
+            const batchSize = 50; // Adjust as needed
+            for (let i = 0; i < threatsCount; i += batchSize) {
+                const batchEnd = Math.min(i + batchSize, threatsCount);
+                const batchPromises = [];
+
+                for (let j = i; j < batchEnd; j++) {
+                    batchPromises.push(contract.methods.threats(j).call());
+                }
+
+                const batchThreats = await Promise.all(batchPromises);
+                threats = threats.concat(batchThreats);
+            }
+
+            allThreats = threats;
+            applyFiltersAndDisplay();
+        } catch (error) {
+            console.error('Error fetching threats:', error);
+            showStatusModal('Error', 'Failed to fetch threats. Please try again.', 'danger');
+        } finally {
+            showLoadingTable(false);
+        }
+    }
+
+    function showLoadingTable(show) {
+        const threatsBody = document.getElementById('threatsBody');
+        threatsBody.innerHTML = show ? `<tr><td colspan="5" class="text-center">Loading...</td></tr>` : '';
+    }
+
+    function applyFiltersAndDisplay() {
+        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        const filter = document.getElementById('filterVerified').value;
+
+        let filteredThreats = allThreats.filter(threat => {
+            const matchesSearch = threat.ipAddress.toLowerCase().includes(searchQuery) ||
+                                  threat.hash.toLowerCase().includes(searchQuery) ||
+                                  threat.description.toLowerCase().includes(searchQuery);
+            const matchesFilter = filter === 'all' ||
+                                  (filter === 'verified' && threat.verified) ||
+                                  (filter === 'unverified' && !threat.verified);
+            return matchesSearch && matchesFilter;
         });
-        pagination.appendChild(pageLi);
+
+        currentPage = 1; // Reset to first page on new filter/search
+        displayThreats(filteredThreats);
+        setupPagination(filteredThreats);
     }
 
-    // Next Button
-    const nextLi = document.createElement("li");
-    nextLi.classList.add("page-item", currentPage === totalPages || totalPages === 0 ? "disabled" : "");
-    nextLi.innerHTML = `
-        <a class="page-link" href="#" aria-label="Next">
-            <span aria-hidden="true">&raquo;</span>
-        </a>
-    `;
-    nextLi.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayThreats();
+    function displayThreats(threats) {
+        const threatsBody = document.getElementById('threatsBody');
+        threatsBody.innerHTML = '';
+
+        if (threats.length === 0) {
+            threatsBody.innerHTML = `<tr><td colspan="5" class="text-center">No threats found.</td></tr>`;
+            return;
         }
-    });
-    pagination.appendChild(nextLi);
-}
 
-// Function to show Bootstrap Modal for Status Messages
-function showModal(title, message, type) {
-    const modalHeader = document.getElementById("statusModalHeader");
-    const modalTitle = document.getElementById("statusModalLabel");
-    const modalBody = document.getElementById("statusModalBody");
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const paginatedThreats = threats.slice(start, end);
 
-    // Set title and message
-    modalTitle.textContent = title;
-    modalBody.textContent = message;
-
-    // Set header color based on type
-    modalHeader.className = "modal-header"; // Reset classes
-    if (type === "success") {
-        modalHeader.classList.add("bg-success", "text-white");
-    } else if (type === "error") {
-        modalHeader.classList.add("bg-danger", "text-white");
-    } else if (type === "info") {
-        modalHeader.classList.add("bg-info", "text-dark");
+        paginatedThreats.forEach((threat) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${parseInt(threat.id)}</td>
+                <td>${threat.ipAddress}</td>
+                <td>${threat.hash}</td>
+                <td>${threat.description}</td>
+                <td>${threat.verified ? '✅' : '❌'}</td>
+            `;
+            threatsBody.appendChild(row);
+        });
     }
 
-    // Show modal
-    const statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
-    statusModal.show();
-}
+    function setupPagination(threats) {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
 
-// Dark Mode Toggle
-document.getElementById("darkModeToggle").addEventListener("click", function () {
-    document.body.classList.toggle("dark-mode");
-    const isDarkMode = document.body.classList.contains("dark-mode");
-    this.textContent = isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode";
+        const totalPages = Math.ceil(threats.length / itemsPerPage);
+        if (totalPages <= 1) return;
+
+        // Previous Button
+        const prevLi = document.createElement('li');
+        prevLi.classList.add('page-item', currentPage === 1 ? 'disabled' : '');
+        prevLi.innerHTML = `<a class="page-link" href="#">Previous</a>`;
+        prevLi.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentPage > 1) {
+                currentPage--;
+                displayThreats(threats);
+                setupPagination(threats);
+            }
+        });
+        pagination.appendChild(prevLi);
+
+        // Page Numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.classList.add('page-item', i === currentPage ? 'active' : '');
+            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            li.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPage = i;
+                displayThreats(threats);
+                setupPagination(threats);
+            });
+            pagination.appendChild(li);
+        }
+
+        // Next Button
+        const nextLi = document.createElement('li');
+        nextLi.classList.add('page-item', currentPage === totalPages ? 'disabled' : '');
+        nextLi.innerHTML = `<a class="page-link" href="#">Next</a>`;
+        nextLi.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayThreats(threats);
+                setupPagination(threats);
+            }
+        });
+        pagination.appendChild(nextLi);
+    }
+
+    // Event listeners for search and filter
+    document.getElementById('searchInput').addEventListener('input', applyFiltersAndDisplay);
+    document.getElementById('filterVerified').addEventListener('change', applyFiltersAndDisplay);
+
+    // Clear Threats Table
+    function clearThreatsTable() {
+        const threatsBody = document.getElementById('threatsBody');
+        threatsBody.innerHTML = `<tr><td colspan="5" class="text-center">Please connect your wallet to view threats.</td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+    }
+
+    // Show Status Modal
+    function showStatusModal(title, message, type) {
+        const statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        const statusModalHeader = document.getElementById('statusModalHeader');
+        const statusModalLabel = document.getElementById('statusModalLabel');
+        const statusModalBody = document.getElementById('statusModalBody');
+
+        // Reset classes
+        statusModalHeader.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'bg-secondary');
+        statusModalLabel.classList.remove('text-white');
+
+        // Apply new classes based on type
+        switch (type) {
+            case 'success':
+                statusModalHeader.classList.add('bg-success');
+                statusModalLabel.classList.add('text-white');
+                break;
+            case 'danger':
+                statusModalHeader.classList.add('bg-danger');
+                statusModalLabel.classList.add('text-white');
+                break;
+            case 'warning':
+                statusModalHeader.classList.add('bg-warning');
+                break;
+            case 'info':
+                statusModalHeader.classList.add('bg-info');
+                statusModalLabel.classList.add('text-white');
+                break;
+            case 'secondary':
+                statusModalHeader.classList.add('bg-secondary');
+                statusModalLabel.classList.add('text-white');
+                break;
+            default:
+                statusModalHeader.classList.add('bg-secondary');
+                statusModalLabel.classList.add('text-white');
+        }
+
+        statusModalLabel.textContent = title;
+        statusModalBody.textContent = message;
+        statusModal.show();
+    }
 });
-
-// CSS for Dark Mode
-const darkModeStyles = `
-    body.dark-mode {
-        background-color: #121212;
-        color: #e0e0e0;
-    }
-    .card.dark-mode {
-        background-color: #1e1e1e;
-        color: #e0e0e0;
-    }
-    .navbar.dark-mode {
-        background-color: #1e1e1e !important;
-    }
-    .table-dark .table-dark {
-        background-color: #333;
-    }
-    footer.dark-mode {
-        background-color: #1e1e1e;
-        color: #e0e0e0;
-    }
-`;
-
-// Inject Dark Mode Styles
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = darkModeStyles;
-document.head.appendChild(styleSheet);
